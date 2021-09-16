@@ -1,0 +1,55 @@
+- hosts: bigips
+  gather_facts: False
+  remote_user: root
+  tasks:
+    - block:
+      - name: check local as3 rpm exists or not
+        stat:
+          path: ../deps/f5-appsvcs-extension.rpm
+        register: as3rpm
+
+      - name: download f5-appsvcs-extension rpm to localhost
+        uri:
+          url: "{{ as3_rpm_url }}"
+          dest: ../deps/f5-appsvcs-extension.rpm
+        when: as3rpm.stat.exists == False
+
+      - name: check if appsvcs already deployed on BIG-IP VE
+        uri:
+          url: https://{{ inventory_hostname }}:443/mgmt/shared/appsvcs/info
+          url_username: admin
+          url_password: "{{ admin_password }}"
+          validate_certs: no
+          status_code: [200, 404]
+        register: as3info
+
+      - block:
+        - name: get downloaded appsvcs rpm file stat
+          stat: path=../deps/f5-appsvcs-extension.rpm
+          register: as3rpm
+
+        - name: upload appsvcs rpm to bigip
+          shell: |
+            curl -kv -u admin:{{ admin_password }} \
+              -H "Content-Type: application/octet-stream" \
+              -H "Content-Range: 0-{{ as3rpm.stat.size - 1 }}/{{ as3rpm.stat.size }}" \
+              -H "Connection: keep-alive" \
+              -H "Content-Length: {{ as3rpm.stat.size }}" \
+              --data-binary @../deps/f5-appsvcs-extension.rpm \
+              https://{{ inventory_hostname }}:443/mgmt/shared/file-transfer/uploads/f5-appsvcs-extension.rpm
+
+        - name: install appsvcs on bigip
+          uri: 
+            url: https://{{ inventory_hostname }}:443/mgmt/shared/iapp/package-management-tasks
+            method: POST
+            headers:
+              Origin: https://{{ inventory_hostname }}
+              Content-Type: "application/json;charset=UTF-8"
+            body: '{"operation": "INSTALL", "packageFilePath": "/var/config/rest/downloads/f5-appsvcs-extension.rpm"}'
+            url_username: admin
+            url_password: "{{ admin_password }}"
+            validate_certs: no
+            status_code: [200, 202]
+
+        when: as3info.status == 404
+      delegate_to: localhost

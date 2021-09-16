@@ -3,7 +3,7 @@
   remote_user: root
   tasks:
     - block:
-      - name: check f5-telemetry-streaming rpm exists or not
+      - name: check local f5-telemetry-streaming rpm exists or not
         stat:
           path: ../deps/f5-telemetry-streaming.rpm
         register: tsrpm
@@ -47,21 +47,20 @@
         #     url_password: "{{ admin_password }}"
         #     validate_certs: no
 
-        # - name: upload telemetry streaming rpm to bigip
-        #   shell: |
-        #     curl -kv -u admin:{{ admin_password }} \
-        #       -H "Content-Type: application/octet-stream" \
-        #       -H "Content-Range: 0-{{ tsrpm.stat.size - 1 }}/{{ tsrpm.stat.size }}" \
-        #       -H "Connection: keep-alive" \
-        #       -H "Content-Length: {{ tsrpm.stat.size }}" \
-        #       --data-binary @../deps/f5-telemetry-streaming.rpm \
-        #       https://{{ inventory_hostname }}:443/mgmt/shared/file-transfer/uploads/f5-telemetry-streaming.rpm
+        - name: upload telemetry streaming rpm to bigip
+          shell: |
+            curl -kv -u admin:{{ admin_password }} \
+              -H "Content-Type: application/octet-stream" \
+              -H "Content-Range: 0-{{ tsrpm.stat.size - 1 }}/{{ tsrpm.stat.size }}" \
+              -H "Connection: keep-alive" \
+              -H "Content-Length: {{ tsrpm.stat.size }}" \
+              --data-binary @../deps/f5-telemetry-streaming.rpm \
+              https://{{ inventory_hostname }}:443/mgmt/shared/file-transfer/uploads/f5-telemetry-streaming.rpm
 
         - name: install telemetry streaming on bigip
           uri: 
             url: https://{{ inventory_hostname }}:443/mgmt/shared/iapp/package-management-tasks
             method: POST
-            # return_content: yes
             headers:
               Origin: https://{{ inventory_hostname }}
               Content-Type: "application/json;charset=UTF-8"
