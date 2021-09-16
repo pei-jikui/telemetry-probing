@@ -1,0 +1,75 @@
+- hosts: bigips
+  gather_facts: False
+  remote_user: root
+  tasks:
+    - block:
+      - name: check f5-telemetry-streaming rpm exists or not
+        stat:
+          path: ../deps/f5-telemetry-streaming.rpm
+        register: tsrpm
+
+      - name: download f5-telemetry-stream rpm to localhost
+        uri:
+          url: "{{ telemetry_rpm_url }}"
+          dest: ../deps/f5-telemetry-streaming.rpm
+        when: tsrpm.stat.exists == False
+
+      - name: check if telemetry streaming already deployed on BIG-IP VE
+        uri:
+          url: https://{{ inventory_hostname }}:443/mgmt/shared/telemetry/info
+          url_username: admin
+          url_password: "{{ admin_password }}"
+          validate_certs: no
+          status_code: [200, 404]
+        register: tsinfo
+
+      - block:
+        - name: get downloaded telmetry streaming rpm file stat
+          stat: path=../deps/f5-telemetry-streaming.rpm
+          register: tsrpm
+
+        # https://stackoverflow.com/questions/69201079/how-does-ansible-buitin-uri-upload-binary-file
+        # - name: upload telemetry streaming rpm to bigip
+        #   uri: 
+        #     url: https://{{ inventory_hostname }}:443/mgmt/shared/file-transfer/uploads/f5-telemetry-streaming.rpm
+        #     method: POST
+        #     # return_content: yes
+        #     headers:
+        #       Content-Type: "application/octet-stream"
+        #       Content-Range: "0-{{ tsrpm.stat.size - 1 }}/{{ tsrpm.stat.size }}"
+        #       Connection: keep-alive
+        #       Content-Length: "{{ tsrpm.stat.size }}"
+        #     # body: "{{ lookup('file', '../deps/f5-telemetry-streaming.rpm') }}"
+        #     # ==> UnicodeEncodeError: 'utf-8' codec can't encode characters in position 0-3: surrogates not allowed
+        #     src: '../deps/f5-telemetry-streaming.rpm'
+        #     # ==> "Status code was -1 and not [200]: Connection failure: The read operation timed out"
+        #     url_username: admin
+        #     url_password: "{{ admin_password }}"
+        #     validate_certs: no
+
+        # - name: upload telemetry streaming rpm to bigip
+        #   shell: |
+        #     curl -kv -u admin:{{ admin_password }} \
+        #       -H "Content-Type: application/octet-stream" \
+        #       -H "Content-Range: 0-{{ tsrpm.stat.size - 1 }}/{{ tsrpm.stat.size }}" \
+        #       -H "Connection: keep-alive" \
+        #       -H "Content-Length: {{ tsrpm.stat.size }}" \
+        #       --data-binary @../deps/f5-telemetry-streaming.rpm \
+        #       https://{{ inventory_hostname }}:443/mgmt/shared/file-transfer/uploads/f5-telemetry-streaming.rpm
+
+        - name: install telemetry streaming on bigip
+          uri: 
+            url: https://{{ inventory_hostname }}:443/mgmt/shared/iapp/package-management-tasks
+            method: POST
+            # return_content: yes
+            headers:
+              Origin: https://{{ inventory_hostname }}
+              Content-Type: "application/json;charset=UTF-8"
+            body: '{"operation": "INSTALL", "packageFilePath": "/var/config/rest/downloads/f5-telemetry-streaming.rpm"}'
+            url_username: admin
+            url_password: "{{ admin_password }}"
+            validate_certs: no
+            status_code: [200, 202]
+
+        when: tsinfo.status == 404
+      delegate_to: localhost
