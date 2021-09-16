@@ -1,0 +1,23 @@
+{
+    "class": "Telemetry",
+    "My_Listener": {
+        "class": "Telemetry_Listener",
+        "port": 6514,
+        "trace": true
+    },
+    "My_Consumer": {
+        "class": "Telemetry_Consumer",
+        "type": "Generic_HTTP",
+        "host": "{{ downstream.ipaddr }}",
+        "protocol": "http",
+        "port": {{ downstream.port }},
+        "path": "/http_input",
+        "method": "POST",
+        "headers": [
+            {
+                "name": "content-type",
+                "value": "application/json"
+            }
+        ]
+    }
+}
