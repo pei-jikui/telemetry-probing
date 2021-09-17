@@ -1,0 +1,22 @@
+- hosts: bigips
+  gather_facts: False
+  remote_user: root
+  tasks:
+    - block:
+      - name: generate test timestap and randomed string
+        shell: echo `date` - $$
+        register: random_string
+
+      - name: send test message to ts event listener
+        uri:
+          url: https://{{ inventory_hostname }}:443/mgmt/shared/telemetry/eventListener/My_Listener
+          method: POST
+          body: '{"message": "{{ random_string.stdout }} {{ downstream.ipaddr }}"}'
+          body_format: json
+          headers:
+            Content-Type: "application/json"
+          url_username: admin
+          url_password: "{{ admin_password }}"
+          validate_certs: no
+
+      delegate_to: localhost
