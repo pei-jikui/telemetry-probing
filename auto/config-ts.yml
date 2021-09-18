@@ -21,7 +21,7 @@
           validate_certs: no
         register: result
       
-      # - name: show ts configuration
-      #   debug: "msg={{result}}"
+      - name: show ts configuration
+        debug: "msg={{result.status }}-{{ result.json.message }}"
 
       delegate_to: localhost

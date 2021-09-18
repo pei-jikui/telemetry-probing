@@ -9,7 +9,10 @@
     "My_Listener": {
         "class": "Telemetry_Listener",
         "port": 6514,
-        "trace": true
+        "trace": [
+            { "type": "input" },
+            { "type": "output" }
+        ]
     },
     "My_Consumer": {
         "class": "Telemetry_Consumer",
