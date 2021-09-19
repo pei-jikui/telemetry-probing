@@ -1,0 +1,21 @@
+{
+    "class": "AS3",
+    "action": "deploy",
+    "persist": true,
+    "declaration": {
+        "class": "ADC",
+        "schemaVersion": "3.0.0",
+        "label": "pool {{ poolName }}",
+        "tenant_{{ poolName }}": {
+            "class": "Tenant",
+            "AppX": {
+                "class": "Application",
+                "{{ poolName }}": {
+                    "class": "Pool",
+                    "monitors": {{ healthMonitors | to_json }},
+                    "members": {{ members | to_json }}
+                }
+            }
+        }
+    }
+}

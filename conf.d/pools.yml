@@ -1,0 +1,28 @@
+
+---
+
+pools:
+  - name: web_pool
+    members:
+      - servicePort: 80
+        serverAddresses:
+          - "10.250.11.185"
+        shareNodes: true
+    monitors:
+      - "http"
+
+  - name: icmp_pool
+    members:
+      - servicePort: 80
+        serverAddresses:
+          - "10.250.11.185"
+        shareNodes: true
+    monitors:
+      - "icmp"
+
+monitors:
+  - name: http_ex
+    paths:
+      - ../monitors/http_ex.py
+  - name: icmp_ex
+    paths: ../monitors/ping.sh

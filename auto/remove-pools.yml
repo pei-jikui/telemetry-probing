@@ -1,0 +1,21 @@
+- hosts: bigips
+  gather_facts: False
+  remote_user: root
+  tasks:
+    - block:
+      - name: remove bigip pools
+        uri:
+          url: https://{{ inventory_hostname }}:443/mgmt/shared/appsvcs/declare
+          method: DELETE
+          body: '{"class": "AS3", "action": "remove"}'
+          body_format: json
+          headers:
+            Content-Type: "application/json"
+          url_username: admin
+          url_password: "{{ admin_password }}"
+          validate_certs: no
+        register: result
+      
+      - name: show as3 configuration
+        debug: "msg={{ result.json.declaration }}"
+      delegate_to: localhost
