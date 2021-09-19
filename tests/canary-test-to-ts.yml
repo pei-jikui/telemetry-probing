@@ -7,17 +7,22 @@
         shell: echo `date` - $$
         register: random_string
 
-      - name: send test message to ts event listener
-        uri:
-          url: https://{{ inventory_hostname }}:443/mgmt/shared/telemetry/eventListener/My_Listener
-          method: POST
-          body: '{"message": "{{ random_string.stdout }} {{ downstream.ipaddr }} {{ item }}"}'
-          body_format: json
-          headers:
-            Content-Type: "application/json"
-          url_username: admin
-          url_password: "{{ admin_password }}"
-          validate_certs: no
-        with_items: "{{ range(0, 10000, 1) | list }}"
+      # - name: send test message to ts event listener via http
+      #   uri:
+      #     url: https://{{ inventory_hostname }}:443/mgmt/shared/telemetry/eventListener/My_Listener
+      #     method: POST
+      #     body: '{"message": "{{ random_string.stdout }} {{ downstream.ipaddr }} {{ item }}"}'
+      #     body_format: json
+      #     headers:
+      #       Content-Type: "application/json"
+      #     url_username: admin
+      #     url_password: "{{ admin_password }}"
+      #     validate_certs: no
+      #   with_items: "{{ range(0, 10000, 1) | list }}"
 
+      - name: send test message to ts event listener via tcp
+        shell: |
+          str="a=\"$$\",b=\"`date`\",c=\"{{ item }}\""
+          echo $str | nc {{ inventory_hostname }} 6514
+        with_items: "{{ range(0, 10000, 1) | list }}"
       delegate_to: localhost
