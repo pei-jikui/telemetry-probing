@@ -1,0 +1,20 @@
+- hosts: bigips
+  gather_facts: False
+  remote_user: root
+  tasks:
+    - block:
+        - name: upload external monitors files to bigip.
+          f5networks.f5_modules.bigip_file_copy:
+            datastore: external-monitor
+            force: yes
+            name: "{{ item.name }}"
+            partition: Common
+            provider:
+              user: admin
+              server: "{{ inventory_hostname }}"
+              password: "{{ admin_password }}"
+              validate_certs: False
+            source: "{{ item.path }}"
+            state: present
+          with_items: "{{ monitors }}"
+      delegate_to: localhost

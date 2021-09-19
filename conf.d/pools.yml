@@ -22,7 +22,6 @@ pools:
 
 monitors:
   - name: http_ex
-    paths:
-      - ../monitors/http_ex.py
+    path: ../monitors/http_ex.py
   - name: icmp_ex
-    paths: ../monitors/ping.sh
+    path: ../monitors/ping.sh
