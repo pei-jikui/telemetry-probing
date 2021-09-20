@@ -21,7 +21,19 @@ pools:
       - "icmp"
 
 monitors:
+
   - name: http_ex
     path: ../monitors/http_ex.py
+    interval: 5
+    timeout: 16
+    arguments: 
+    variables:
+      var1: a
+
   - name: icmp_ex
     path: ../monitors/ping.sh
+    interval: 5
+    timeout: 16
+    arguments: 
+    variables:
+      var1: a

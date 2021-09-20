@@ -17,4 +17,21 @@
             source: "{{ item.path }}"
             state: present
           with_items: "{{ monitors }}"
+        
+        - name: create ltm external monitors
+          f5networks.f5_modules.bigip_monitor_external:
+            arguments: "{{ item.arguments | default('') }}"
+            external_program: /Common/{{ item.name }}
+            interval: "{{ item.interval }}"
+            name: "{{ item.name }}"
+            partition: Common
+            state: present
+            variables: "{{ item.variables }}"
+            provider:
+              user: admin
+              server: "{{ inventory_hostname }}"
+              password: "{{ admin_password }}"
+              validate_certs: False
+          with_items: "{{ monitors }}"
+
       delegate_to: localhost
