@@ -9,7 +9,7 @@ pools:
           - "10.250.11.185"
         shareNodes: true
     monitors:
-      - "http"
+      - "http_ex"
 
   - name: icmp_pool
     members:
@@ -18,7 +18,7 @@ pools:
           - "10.250.11.185"
         shareNodes: true
     monitors:
-      - "icmp"
+      - "icmp_ex"
 
 monitors:
 
