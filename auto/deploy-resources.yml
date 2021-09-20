@@ -3,23 +3,31 @@
   remote_user: root
   tasks:
     - block:
+      - name: upload external monitors files to bigip.
+        f5networks.f5_modules.bigip_file_copy:
+          datastore: external-monitor
+          force: yes
+          name: "{{ item.name }}"
+          partition: Common
+          provider:
+            user: admin
+            server: "{{ inventory_hostname }}"
+            password: "{{ admin_password }}"
+            validate_certs: False
+          source: "{{ item.path }}"
+          state: present
+        with_items: "{{ monitors }}"
+
       - name: generate as3 configuration
         template:
-          src: ../conf.d/templates/as3.pool.json.j2
-          dest: "../deps/{{item.name}}-as3.pool.json"
-        vars:
-          healthMonitors: "{{ item.monitors }}"
-          members: "{{ item.members }}"
-          poolName: "{{ item.name }}"
-        with_items: "{{ pools }}"
-        loop_control:
-          label: "{{ item.name }}"
+          src: ../conf.d/templates/as3.resources.json.j2
+          dest: "../deps/as3.resources.json"
 
       - name: configure bigip pool
         uri:
           url: https://{{ inventory_hostname }}:443/mgmt/shared/appsvcs/declare
           method: POST
-          body: "{{ lookup('file', '../deps/' + item.name + '-as3.pool.json') }}"
+          body: "{{ lookup('file', '../deps/as3.resources.json') }}"
           body_format: json
           headers:
             Content-Type: "application/json"
@@ -27,10 +35,7 @@
           url_password: "{{ admin_password }}"
           validate_certs: no
         register: result
-        with_items: "{{ pools }}"
-        loop_control:
-          label: "{{ item.name }}"
       
-      # - name: show as3 configuration
-      #   debug: "msg={{ result }}"
+      - name: show as3 configuration
+        debug: "msg={{ result }}"
       delegate_to: localhost

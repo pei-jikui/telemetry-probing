@@ -1,0 +1,43 @@
+{
+    "class": "AS3",
+    "action": "deploy",
+    "persist": true,
+    "declaration": {
+        "class": "ADC",
+        "schemaVersion": "3.0.0",
+        "Common": {
+            "class": "Tenant",
+            "Shared": {
+                "class": "Application",
+                "template": "shared",
+                {% for pool in pools %}
+                "{{ pool.name }}": {
+                    "class": "Pool",
+                    "monitors": [
+                        {% for monitor in pool.monitors %}
+                        { "use": "{{ monitor }}" }{{ ',' if not loop.last }}
+                        {% endfor %}
+                    ],
+                    "members": 
+                        {% set members = [] %}
+                        {% for member in pool.members %}
+                            {% do member.update({'shareNodes': true}) %}
+                            {% do members.append(member) %}
+                        {% endfor %}
+                        {{ members | to_json }}
+                }{{ ',' if not loop.last }}
+                {% endfor %},
+
+                {% for monitor in monitors %}
+                    {%- set mt_decl = {
+                        "class": "Monitor",
+                        "monitorType": "external",
+                        "pathname": "/Common/" + monitor.name
+                    } -%}
+                    {% do mt_decl.update(monitor.as3_options) %}
+                    "{{ monitor.name }}": {{ mt_decl | to_json }}{{ ',' if not loop.last }}
+                {% endfor %}
+            }
+        }
+    }
+}

@@ -6,34 +6,38 @@ pools:
     members:
       - servicePort: 80
         serverAddresses:
-          - "10.250.11.185"
-        shareNodes: true
+          - 10.250.11.185
     monitors:
-      - "http_ex"
+      - http_ex
+      - icmp_ex
 
   - name: icmp_pool
     members:
       - servicePort: 80
         serverAddresses:
-          - "10.250.11.185"
-        shareNodes: true
+          - 10.250.11.185
+      - servicePort: 81
+        serverAddresses:
+          - 10.250.11.186
     monitors:
-      - "icmp_ex"
+      - icmp_ex
 
 monitors:
 
   - name: http_ex
     path: ../monitors/http_ex.py
-    interval: 5
-    timeout: 16
-    arguments: 
-    variables:
-      var1: a
+    as3_options:
+      interval: 5
+      timeout: 16
+      # arguments: 
+      environmentVariables:
+        var1: a
 
   - name: icmp_ex
     path: ../monitors/ping.sh
-    interval: 5
-    timeout: 16
-    arguments: 
-    variables:
-      var1: a
+    as3_options:
+      interval: 5
+      timeout: 16
+      # arguments: 
+      environmentVariables:
+        var1: a
