@@ -36,7 +36,7 @@ monitors:
         var1: a
 
   - name: icmp_ex
-    path: ../monitors/ping.sh
+    path: ../monitors/ping_ex.sh
     as3_options:
       interval: 5
       timeout: 16
