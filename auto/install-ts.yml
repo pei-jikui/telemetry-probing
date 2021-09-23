@@ -3,15 +3,16 @@
   remote_user: root
   tasks:
     - block:
-      - name: check local f5-telemetry-streaming rpm exists or not
+
+      - name: check local {{ ts_rpm_basename }} rpm exists or not
         stat:
-          path: ../deps/f5-telemetry-streaming.rpm
+          path: ../deps/{{ ts_rpm_basename }}
         register: tsrpm
 
-      - name: download f5-telemetry-stream rpm to localhost
+      - name: download {{ ts_rpm_basename }} to localhost
         uri:
           url: "{{ telemetry_rpm_url }}"
-          dest: ../deps/f5-telemetry-streaming.rpm
+          dest: ../deps/{{ ts_rpm_basename }}
         when: tsrpm.stat.exists == False
 
       - name: check if telemetry streaming already deployed on BIG-IP VE
@@ -25,13 +26,13 @@
 
       - block:
         - name: get downloaded telmetry streaming rpm file stat
-          stat: path=../deps/f5-telemetry-streaming.rpm
+          stat: path=../deps/{{ ts_rpm_basename }}
           register: tsrpm
 
         # https://stackoverflow.com/questions/69201079/how-does-ansible-buitin-uri-upload-binary-file
         # - name: upload telemetry streaming rpm to bigip
         #   uri: 
-        #     url: https://{{ inventory_hostname }}:443/mgmt/shared/file-transfer/uploads/f5-telemetry-streaming.rpm
+        #     url: https://{{ inventory_hostname }}:443/mgmt/shared/file-transfer/uploads/{{ ts_rpm_basename }}
         #     method: POST
         #     # return_content: yes
         #     headers:
@@ -39,9 +40,9 @@
         #       Content-Range: "0-{{ tsrpm.stat.size - 1 }}/{{ tsrpm.stat.size }}"
         #       Connection: keep-alive
         #       Content-Length: "{{ tsrpm.stat.size }}"
-        #     # body: "{{ lookup('file', '../deps/f5-telemetry-streaming.rpm') }}"
+        #     # body: "{{ lookup('file', '../deps/{{ ts_rpm_basename }}') }}"
         #     # ==> UnicodeEncodeError: 'utf-8' codec can't encode characters in position 0-3: surrogates not allowed
-        #     src: '../deps/f5-telemetry-streaming.rpm'
+        #     src: '../deps/{{ ts_rpm_basename }}'
         #     # ==> "Status code was -1 and not [200]: Connection failure: The read operation timed out"
         #     url_username: admin
         #     url_password: "{{ admin_password }}"
@@ -54,8 +55,8 @@
               -H "Content-Range: 0-{{ tsrpm.stat.size - 1 }}/{{ tsrpm.stat.size }}" \
               -H "Connection: keep-alive" \
               -H "Content-Length: {{ tsrpm.stat.size }}" \
-              --data-binary @../deps/f5-telemetry-streaming.rpm \
-              https://{{ inventory_hostname }}:443/mgmt/shared/file-transfer/uploads/f5-telemetry-streaming.rpm
+              --data-binary @../deps/{{ ts_rpm_basename }} \
+              https://{{ inventory_hostname }}:443/mgmt/shared/file-transfer/uploads/{{ ts_rpm_basename }}
 
         - name: install telemetry streaming on bigip
           uri: 
@@ -64,11 +65,32 @@
             headers:
               Origin: https://{{ inventory_hostname }}
               Content-Type: "application/json;charset=UTF-8"
-            body: '{"operation": "INSTALL", "packageFilePath": "/var/config/rest/downloads/f5-telemetry-streaming.rpm"}'
+            body: "{{ body_string | string }}"
             url_username: admin
             url_password: "{{ admin_password }}"
             validate_certs: no
             status_code: [200, 202]
+          vars:
+            body_string: '{"operation": "INSTALL", "packageFilePath": "/var/config/rest/downloads/{{ ts_rpm_basename }}"}'
 
-        when: tsinfo.status == 404
+        - name: wait for ts readiness.
+          shell: sleep 5
+
+        when: tsinfo.status == 404 or reinstall is defined
+
+      - name: get bigip telemetry version
+        uri:
+          url: https://{{ inventory_hostname }}:443/mgmt/shared/telemetry/info
+          method: GET
+          url_username: admin
+          url_password: "{{ admin_password }}"
+          validate_certs: no
+          status_code: [200, 404]
+        register: result
+
+      - name: show telemetry version
+        debug: msg="{{ result.json }}"
+      
+      vars:
+        ts_rpm_basename: "{{ telemetry_rpm_url | basename }}"
       delegate_to: localhost
