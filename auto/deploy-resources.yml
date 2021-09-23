@@ -17,6 +17,8 @@
           source: "{{ item.path }}"
           state: present
         with_items: "{{ monitors }}"
+        loop_control:
+          label: "{{ item.name }}"
 
       - name: generate as3 configuration
         template:
@@ -37,5 +39,5 @@
         register: result
       
       - name: show as3 configuration
-        debug: "msg={{ result }}"
+        debug: "msg={{ result.json.results }}"
       delegate_to: localhost

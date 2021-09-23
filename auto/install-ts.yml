@@ -74,7 +74,7 @@
             body_string: '{"operation": "INSTALL", "packageFilePath": "/var/config/rest/downloads/{{ ts_rpm_basename }}"}'
 
         - name: wait for ts readiness.
-          shell: sleep 5
+          shell: sleep 15
 
         when: tsinfo.status == 404 or reinstall is defined
 
@@ -85,7 +85,6 @@
           url_username: admin
           url_password: "{{ admin_password }}"
           validate_certs: no
-          status_code: [200, 404]
         register: result
 
       - name: show telemetry version
