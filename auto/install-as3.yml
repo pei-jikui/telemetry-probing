@@ -3,15 +3,15 @@
   remote_user: root
   tasks:
     - block:
-      - name: check local as3 rpm exists or not
+      - name: check local {{ as3_rpm_basename }} exists or not
         stat:
-          path: ../deps/f5-appsvcs-extension.rpm
+          path: ../deps/{{ as3_rpm_basename }}
         register: as3rpm
 
       - name: download f5-appsvcs-extension rpm to localhost
         uri:
           url: "{{ as3_rpm_url }}"
-          dest: ../deps/f5-appsvcs-extension.rpm
+          dest: ../deps/{{ as3_rpm_basename }}
         when: as3rpm.stat.exists == False
 
       - name: check if appsvcs already deployed on BIG-IP VE
@@ -25,7 +25,7 @@
 
       - block:
         - name: get downloaded appsvcs rpm file stat
-          stat: path=../deps/f5-appsvcs-extension.rpm
+          stat: path=../deps/{{ as3_rpm_basename }}
           register: as3rpm
 
         - name: upload appsvcs rpm to bigip
@@ -35,8 +35,8 @@
               -H "Content-Range: 0-{{ as3rpm.stat.size - 1 }}/{{ as3rpm.stat.size }}" \
               -H "Connection: keep-alive" \
               -H "Content-Length: {{ as3rpm.stat.size }}" \
-              --data-binary @../deps/f5-appsvcs-extension.rpm \
-              https://{{ inventory_hostname }}:443/mgmt/shared/file-transfer/uploads/f5-appsvcs-extension.rpm
+              --data-binary @../deps/{{ as3_rpm_basename }} \
+              https://{{ inventory_hostname }}:443/mgmt/shared/file-transfer/uploads/{{ as3_rpm_basename }}
 
         - name: install appsvcs on bigip
           uri: 
@@ -45,11 +45,32 @@
             headers:
               Origin: https://{{ inventory_hostname }}
               Content-Type: "application/json;charset=UTF-8"
-            body: '{"operation": "INSTALL", "packageFilePath": "/var/config/rest/downloads/f5-appsvcs-extension.rpm"}'
+            body: "{{ body_string | string }}"
             url_username: admin
             url_password: "{{ admin_password }}"
             validate_certs: no
             status_code: [200, 202]
+          vars:
+            body_string: '{"operation": "INSTALL", "packageFilePath": "/var/config/rest/downloads/{{ as3_rpm_basename }}"}'
 
-        when: as3info.status == 404
+        - name: wait for as3 installation readiness
+          shell: sleep 5
+
+        when: as3info.status == 404 or reinstall is defined
+
+      - name: get bigip as3 version
+        uri:
+          url: https://{{ inventory_hostname }}:443/mgmt/shared/appsvcs/info
+          method: GET
+          url_username: admin
+          url_password: "{{ admin_password }}"
+          validate_certs: no
+          status_code: [200, 404]
+        register: result
+
+      - name: show as3 version
+        debug: msg="{{ result.json }}"
+      
       delegate_to: localhost
+      vars:
+        as3_rpm_basename: "{{ as3_rpm_url | basename }}"
