@@ -16,6 +16,8 @@ pools:
       - servicePort: 80
         serverAddresses:
           - 10.250.11.185
+          - 8.8.8.8
+          - 114.114.114.114
       - servicePort: 81
         serverAddresses:
           - 10.250.11.186

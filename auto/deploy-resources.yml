@@ -24,6 +24,8 @@
         template:
           src: ../conf.d/templates/as3.resources.json.j2
           dest: "../deps/as3.resources.json"
+        vars:
+          ts: "{{ lookup('pipe','date +%s') }}"
 
       - name: configure bigip pool
         uri:
